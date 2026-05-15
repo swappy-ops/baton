@@ -3,18 +3,24 @@
 
 Baton is a local-first orchestration system designed to preserve semantic continuity across AI-assisted engineering workflows.
 
-It separates:
+Modern AI systems are powerful at execution but weak at continuity. Context resets, architectural decisions disappear, and long debugging sessions fragment over time.
 
-- **Human → Intent**
+Baton exists to preserve:
+
+**Intent → Context → Execution → Memory → Continuity**
+
+Its architecture separates:
+
+- **Human → Strategic intent**
 - **Laptop → Orchestration**
-- **PC → Model Host**
+- **PC → Model hosting**
 - **Memory → Persistence**
 - **Agents → Specialized execution**
-- **Observability → Cognitive state visualization**
+- **Observability → Cognitive visualization**
 
 Goal:
 
-Reduce context loss, semantic drift, and architectural inconsistency during long AI workflows.
+Reduce semantic drift, preserve reasoning continuity, and maintain architectural coherence during long AI-assisted workflows.
 
 ---
 
@@ -23,37 +29,93 @@ Reduce context loss, semantic drift, and architectural inconsistency during long
 ```mermaid
 flowchart LR
 
-Human[User]
-Laptop[Orchestrator Laptop]
-Memory[(Vector Memory)]
-Agents[Specialized Agents]
-PC[LLM Host PC]
+U[User]
+L[Laptop<br/>Orchestrator]
+A[Agents]
+M[(Memory)]
+R[Runtime]
+P[PC<br/>LLM Host]
 UI[ProjSkep UI]
-Runtime[Runtime + Tasks]
 
-Human --> Laptop
-Laptop --> Agents
-Agents --> Memory
-Agents --> Runtime
-Runtime --> PC
-PC --> Runtime
-Runtime --> UI
-UI --> Human
+U -->|Intent| L
+L --> A
+A --> M
+A --> R
+R --> P
+P --> R
+R --> UI
+UI --> U
+```
+
+### Execution Model
+
+The system distributes responsibility:
+
+| Layer | Responsibility |
+|--------|----------------|
+| User | Strategic intent |
+| Laptop | Orchestration + routing |
+| Agents | Task specialization |
+| Memory | Retrieval + continuity |
+| Runtime | Event execution |
+| PC | Model inference |
+| UI | Observability |
+
+The laptop does **not** run heavy models.
+
+Architecture:
+
+```txt
+Laptop:
+Orchestration
+Routing
+Retrieval
+Agent coordination
+
+↓
+
+PC:
+LLM hosting
+Inference
+Model execution
+
+↓
+
+Memory:
+Persistence
+Continuity
+Trace storage
 ```
 
 ---
 
-# System Roles
+# Why Baton Exists
 
-| Component | Role |
-|-----------|------|
-| User | Strategic intent |
-| Laptop | Orchestration layer |
-| PC | Hosts models |
-| Memory | Retrieval + continuity |
-| Agents | Specialized execution |
-| Runtime | Event routing |
-| UI | Observability |
+Traditional AI workflows fail because:
+
+- Context resets between sessions
+- Architectural decisions disappear
+- Debugging arcs lose continuity
+- Agents drift from established reasoning
+- Long projects accumulate cognitive fragmentation
+
+Baton attempts to preserve:
+
+```txt
+Intent
+ ↓
+Context
+ ↓
+Execution
+ ↓
+Memory
+ ↓
+Continuity
+```
+
+The objective is not bigger models.
+
+The objective is sustained reasoning.
 
 ---
 
@@ -61,27 +123,28 @@ UI --> Human
 
 ```txt
 baton/
-
-agents/
-configs/
-docs/
-graphs/
-memory/
-runtime/
-retrieval/
-tasks/
-
-projskep_ui/
-projskep_server/
-projskep_memory/
-
-orchestrator.py
-multi_agent.py
-projskep_core.py
-watcher_agent.py
-tools_agent.py
-
-README.md
+│
+├── agents/              # Specialized execution agents
+├── configs/             # Runtime configuration
+├── docs/                # Documentation
+├── graphs/              # Topology/state graphs
+├── memory/              # Persistence layer
+├── retrieval/           # Context retrieval
+├── runtime/             # Event execution
+├── tasks/               # Task definitions
+│
+├── projskep_ui/         # Observability interface
+├── projskep_server/     # Backend services
+├── projskep_memory/     # Memory subsystem
+│
+├── orchestrator.py      # Main routing logic
+├── multi_agent.py       # Agent coordination
+├── watcher_agent.py     # Filesystem monitoring
+├── tools_agent.py       # Tool execution
+├── projskep_core.py     # Core runtime
+│
+├── launch_dev.ps1       # Full stack boot
+└── README.md
 ```
 
 ---
@@ -91,18 +154,30 @@ README.md
 ```mermaid
 sequenceDiagram
 
-User->>Orchestrator: Intent
-Orchestrator->>Memory: Retrieve context
-Memory-->>Orchestrator: Relevant state
+participant U as User
+participant O as Orchestrator
+participant M as Memory
+participant A as Agent
+participant P as LLM Host
+participant R as Runtime
+participant UI as Interface
 
-Orchestrator->>Agent: Execute task
-Agent->>LLM Host: Inference
-LLM Host-->>Agent: Response
+U->>O: Intent
+O->>M: Retrieve context
+M-->>O: Relevant state
 
-Agent->>Runtime: Update state
-Runtime->>UI: Visualize
-UI-->>User: Feedback
+O->>A: Execute task
+A->>P: Inference
+P-->>A: Response
+
+A->>R: Update runtime
+R->>UI: Visualize
+UI-->>U: Feedback
 ```
+
+Execution becomes observable.
+
+Reasoning becomes traceable.
 
 ---
 
@@ -111,49 +186,85 @@ UI-->>User: Feedback
 ```mermaid
 graph TD
 
-Event --> Retrieval
-Retrieval --> Context
-Context --> Agent
-Agent --> Output
-Output --> Trace
-Trace --> Memory
-Memory --> Future Sessions
+E[Event]
+R[Retrieve Context]
+A[Agent Execution]
+O[Output]
+T[Trace]
+M[(Memory)]
+F[Future Sessions]
+
+E --> R
+R --> A
+A --> O
+O --> T
+T --> M
+M --> F
 ```
+
+Every execution becomes future context.
+
+The system accumulates continuity instead of restarting cognition.
 
 ---
 
 # Core Principles
 
 ## Retrieval First
-Bounded context > infinite context
+
+Bounded context outperforms unbounded context.
+
+The system retrieves relevant state rather than maximizing tokens.
+
+---
 
 ## Continuity Preservation
-Architectural consistency across sessions
+
+Architectural decisions persist across sessions.
+
+Reasoning becomes cumulative.
+
+---
 
 ## Event Driven
-Filesystem + runtime changes trigger execution
+
+Filesystem changes, runtime events, and user actions trigger execution.
+
+---
 
 ## Observability
-Reasoning becomes inspectable
+
+Complex systems become manageable when cognition is visible.
+
+---
+
+## Sparse Activation
+
+Only relevant agents activate for a given task.
+
+Reduce noise.
+
+Increase signal.
 
 ---
 
 # Running Baton
 
-Start full stack:
+Start the full stack:
 
 ```bash
 ./launch_dev.ps1
 ```
 
-Boots:
+This boots:
 
-- Backend
-- Websocket bus
+- Backend services
 - Agent runtime
-- UI
+- WebSocket bus
+- Retrieval systems
 - Memory services
-- Monitoring
+- Observability UI
+- Health monitoring
 
 ---
 
@@ -167,13 +278,66 @@ Implemented:
 - [x] Orchestration core
 - [x] Event watcher
 - [x] ProjSkep integration
+- [x] Agent coordination
 
 In Progress:
 
-- [ ] Forensic replay
+- [ ] Forensic replay engine
 - [ ] Adaptive telemetry
 - [ ] Agent negotiation visualization
-- [ ] Advanced topology maps
+- [ ] Advanced topology mapping
+- [ ] Runtime diagnostics
+
+Planned:
+
+- [ ] Distributed execution
+- [ ] Long-horizon memory optimization
+- [ ] Visual reasoning replay
+- [ ] Multi-host orchestration
+
+---
+
+# Example Workflow
+
+```txt
+User:
+"Debug this failing VST3 build"
+
+↓
+
+Retrieve:
+Previous traces
+Architecture decisions
+Related files
+
+↓
+
+Agent:
+Analyze
+Execute
+Reason
+
+↓
+
+Model Host:
+Inference
+
+↓
+
+Runtime:
+Update state
+
+↓
+
+Memory:
+Store trace
+
+↓
+
+Future:
+Faster reasoning
+Preserved continuity
+```
 
 ---
 
@@ -181,15 +345,44 @@ In Progress:
 
 Traditional IDE:
 
+```txt
 Human → Code
+```
 
 Baton:
 
-Human → Intent → Agents → Memory → Runtime → Models → Feedback → Persistence
+```txt
+Human
+ ↓
+Intent
+ ↓
+Agents
+ ↓
+Memory
+ ↓
+Runtime
+ ↓
+Models
+ ↓
+Feedback
+ ↓
+Persistence
+```
 
-The system becomes an external cognitive substrate.
+The system becomes an external cognitive layer rather than a temporary assistant.
+
+---
+
+# Philosophy
+
+> Complexity is managed through observability.
+
+The goal is not replacing human reasoning.
+
+The goal is preserving it.
 
 ---
 
 Built by:
-@swappy-ops
+
+**@swappy-ops**
