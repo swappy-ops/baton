@@ -1,0 +1,19 @@
+[project]
+name = "projskep-cognition-stack"
+version = "0.1.0"
+description = "Modular local cognition workstation for ProjSkep"
+dependencies = [
+    "langgraph",
+    "langchain",
+    "langchain-community",
+    "langchain-ollama",
+    "chromadb",
+    "sentence-transformers",
+    "python-dotenv",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+    "black",
+]

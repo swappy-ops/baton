@@ -1,0 +1,21 @@
+# Runtime/generated
+logs/
+completed_tasks/
+failed_tasks/
+incoming_tasks/
+processing_tasks/
+
+# Local artifacts
+torch
+xterm*.svg
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

@@ -1,0 +1,19 @@
+{
+  "models": [
+    {
+      "title": "phi4-router",
+      "provider": "ollama",
+      "model": "phi4"
+    },
+    {
+      "title": "qwen-coder",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "phi4-router",
+    "provider": "ollama",
+    "model": "phi4"
+  }
+}

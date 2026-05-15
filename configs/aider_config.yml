@@ -1,0 +1,7 @@
+model: ollama/qwen2.5-coder:7b
+git: true
+auto-commits: true
+subtree-only: true
+map-tokens: 1024
+context-window: 8192
+suggest-shell-commands: false
