@@ -1,150 +1,195 @@
-# ProjSkep
-## Neural Observatory & Cognitive Control Surface
+# Baton
+### Cognitive Orchestration Layer for Persistent AI Workflows
 
-> **"Clarity under complexity is not a luxury; it is the fundamental requirement for sustained engineering reasoning."**
+Baton is a local-first orchestration system designed to preserve semantic continuity across AI-assisted engineering workflows.
 
-ProjSkep is a production-grade **Neural Observatory** and **Cognitive Control Surface** designed for event-driven orchestration, semantic continuity, and real-time observability. It is a local-first, retrieval-hardened environment that transforms the act of coding and architectural thinking into an immersive, observable experience.
+It separates:
 
----
+- **Human → Intent**
+- **Laptop → Orchestration**
+- **PC → Model Host**
+- **Memory → Persistence**
+- **Agents → Specialized execution**
+- **Observability → Cognitive state visualization**
 
-##  Architectural Philosophy
+Goal:
 
-ProjSkep is **not** an AI chatbot. It is **not** a dashboard. It is a **Cognitive Operating Environment**.
-
-The system is built on the premise that as AI-orchestrated workflows scale, the primary bottleneck becomes **cognitive reload** and **semantic drift**. ProjSkep solves this by externalizing the reasoning process into a reactive, visual substrate—a "black box recorder" for human-AI collaboration.
-
-### The ProjSkep Core:
-- **Retrieval-First Execution**: Bounded, deterministic context injection.
-- **Semantic Continuity**: Persistent architectural governance via the DOS (Documentation Operating System).
-- **Event-Driven Orchestration**: Real-time reaction to filesystem deltas and telemetry streams.
-- **Sparse Activation**: High-performance specialist nodes optimized for low-VRAM (AMD RX 6600) environments.
+Reduce context loss, semantic drift, and architectural inconsistency during long AI workflows.
 
 ---
 
-##  System Topology
+# Architecture
+
+```mermaid
+flowchart LR
+
+Human[User]
+Laptop[Orchestrator Laptop]
+Memory[(Vector Memory)]
+Agents[Specialized Agents]
+PC[LLM Host PC]
+UI[ProjSkep UI]
+Runtime[Runtime + Tasks]
+
+Human --> Laptop
+Laptop --> Agents
+Agents --> Memory
+Agents --> Runtime
+Runtime --> PC
+PC --> Runtime
+Runtime --> UI
+UI --> Human
+```
+
+---
+
+# System Roles
+
+| Component | Role |
+|-----------|------|
+| User | Strategic intent |
+| Laptop | Orchestration layer |
+| PC | Hosts models |
+| Memory | Retrieval + continuity |
+| Agents | Specialized execution |
+| Runtime | Event routing |
+| UI | Observability |
+
+---
+
+# Repository Structure
+
+```txt
+baton/
+
+agents/
+configs/
+docs/
+graphs/
+memory/
+runtime/
+retrieval/
+tasks/
+
+projskep_ui/
+projskep_server/
+projskep_memory/
+
+orchestrator.py
+multi_agent.py
+projskep_core.py
+watcher_agent.py
+tools_agent.py
+
+README.md
+```
+
+---
+
+# Cognitive Execution Flow
+
+```mermaid
+sequenceDiagram
+
+User->>Orchestrator: Intent
+Orchestrator->>Memory: Retrieve context
+Memory-->>Orchestrator: Relevant state
+
+Orchestrator->>Agent: Execute task
+Agent->>LLM Host: Inference
+LLM Host-->>Agent: Response
+
+Agent->>Runtime: Update state
+Runtime->>UI: Visualize
+UI-->>User: Feedback
+```
+
+---
+
+# Persistence Model
 
 ```mermaid
 graph TD
-    User([User Intent]) --> ControlSurface[Neural Observatory UI]
-    ControlSurface -- CMD+K / Intent --> API[FastAPI Server]
-    API -- Event Bus --> Orchestrator[Event Orchestrator]
-    
-    subgraph Execution_Layer [Orchestration Engine]
-        Router{Intent Router: phi4}
-        Specialist[Specialist Nodes]
-        Distillation[Distillation Node]
-        Router --> Specialist --> Distillation
-    end
-    
-    Orchestrator -- Trigger --> Router
-    
-    subgraph Retrieval_Gating [Neural Observatory Core]
-        Pipeline[Retrieval Pipeline]
-        Quality[Quality Scorer]
-        ChromaDB[(ChromaDB)]
-        Pipeline <--> ChromaDB
-        Pipeline --> Quality
-    end
-    
-    Specialist <--> Pipeline
-    Quality -- Telemetry --> API
-    API -- WebSocket --> ControlSurface
-    
-    subgraph Persistence
-        Memory[(Memory Persistence)]
-        Traces[(SQLite Traces)]
-        Distillation --> Memory
-        API --> Traces
-    end
+
+Event --> Retrieval
+Retrieval --> Context
+Context --> Agent
+Agent --> Output
+Output --> Trace
+Trace --> Memory
+Memory --> Future Sessions
 ```
 
 ---
 
-##  Key Features
+# Core Principles
 
-###  Real-Time Topology Map
-The heart of the observatory. A live, reactive graph visualizing execution chains, dependency propagation, and orchestration deltas. Watch the system breathe as it reacts to your code.
+## Retrieval First
+Bounded context > infinite context
 
-###  Context Budget Intelligence
-Visualizing token economics in real-time. Monitor **Prompt Overhead**, **Memory Injection**, and **Semantic Redundancy** via animated radial gauges to prevent cognitive inflation.
+## Continuity Preservation
+Architectural consistency across sessions
 
-###  Forensic Replay Engine
-A cognition black box. Scrub through past sessions, reconstruct topology states, and replay the evolution of an investigation. Perfect for post-mortem analysis of complex debugging arcs.
+## Event Driven
+Filesystem + runtime changes trigger execution
 
-###  Continuity Preservation
-The system monitors for **Semantic Drift**. Every automated suggestion is audited against the established **ARCHITECTURE_MAP.md** and **TERMINOLOGY.md**, ensuring the project's soul remains intact.
-
-###  Intent Control Core
-Shift the system's entire cognitive focus via **CMD+K**. Toggle between **DEBUG**, **RESEARCH**, **BUILD**, and **DEEP_WORK** modes—each profile re-weighting retrieval, telemetry filtering, and topology emphasis.
+## Observability
+Reasoning becomes inspectable
 
 ---
 
-##  Operational Workflows
+# Running Baton
 
-### The VST3 Debugging Arc
-ProjSkep’s primary operational validation path.
-1. **Detect**: System identifies a modification in a VST3 plugin file.
-2. **Retrieve**: Automatically pulls historical traces and related memory chunks.
-3. **Visualize**: Propagates a dependency chain in the Topology Map.
-4. **Audit**: Identifies continuity risks in the BridgeManager logic.
-5. **Propose**: Generates high-fidelity suggestions for human approval.
+Start full stack:
 
----
-
-##  Quick Start
-
-### Coordinated Startup
-ProjSkep features a single-command orchestration boot.
-
-```powershell
-# In the project root
+```bash
 ./launch_dev.ps1
 ```
 
-This script:
-1. Initializes the **FastAPI** backend (Port 8000).
-2. Establishes the **WebSocket** event bus.
-3. Compiles the **React** control surface (Port 5173).
-4. Boots the **Filesystem Watcher** orchestrator.
-5. Verifies system health and auto-opens the UI.
+Boots:
+
+- Backend
+- Websocket bus
+- Agent runtime
+- UI
+- Memory services
+- Monitoring
 
 ---
 
-##  Tech Stack
+# Current State
 
-- **Core**: Python 3.11 / FastAPI / Pydantic v2
-- **UI**: React / Vite / TypeScript / TailwindCSS
-- **Visualization**: React Flow / Framer Motion
-- **Database**: ChromaDB (Vector) / SQLite (Traces)
-- **AI**: Ollama (phi4, qwen2.5-coder:7b)
-- **Acceleration**: ROCm / Vulkan (Optimized for AMD RX 6600)
+Implemented:
 
----
+- [x] Multi-agent runtime
+- [x] Retrieval layer
+- [x] Memory persistence
+- [x] Orchestration core
+- [x] Event watcher
+- [x] ProjSkep integration
 
-##  Daily Operation Guide
+In Progress:
 
-1. **Enter Your Mode**: Use `CMD+K` to set your Intent.
-2. **Watch the Flow**: Keep the Observatory open; watch for propagation pulses in the Topology Map.
-3. **Capture Friction**: Use `CMD+SHIFT+F` to report UI noise or retrieval gaps. This populates **FRICTION_LOG.md**.
-4. **Scrub the Past**: Use the Replay Panel to revisit complex reasoning paths if you lose track of the investigation.
-
----
-
-##  Cognitive Philosophy
-
-> **"Complexity is managed not by reduction, but by observability."**
-
-ProjSkep exists to reduce the entropy of development. By preserving continuity, bounding cognition, and visualizing orchestration, it allows the engineer to maintain **Flow State** even within highly fragmented, AI-assisted workflows.
+- [ ] Forensic replay
+- [ ] Adaptive telemetry
+- [ ] Agent negotiation visualization
+- [ ] Advanced topology maps
 
 ---
 
-##  Roadmap
-- [ ] **Forensic Playback 2.0**: Frame-by-frame state inspection.
-- [ ] **Adaptive Telemetry**: Dynamic noise suppression based on user heart-rate/focus.
-- [ ] **Topology Virtualization**: Supporting >1000 node graphs at 120fps.
-- [ ] **Multi-Agent Bridge**: Visualizing inter-agent negotiation protocols.
+# Long-Term Vision
+
+Traditional IDE:
+
+Human → Code
+
+Baton:
+
+Human → Intent → Agents → Memory → Runtime → Models → Feedback → Persistence
+
+The system becomes an external cognitive substrate.
 
 ---
-**ProjSkep** | Developed by the ProjSkep Systems Engineering Team.
-**Operational Status**: ACTIVE.
-**Vessel**: Neural Observatory.
+
+Built by:
+@swappy-ops
