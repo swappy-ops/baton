@@ -24,28 +24,22 @@ Reduce semantic drift, preserve reasoning continuity, and maintain architectural
 
 ---
 
-# Architecture
+## Architecture
 
 ```mermaid
-flowchart LR
-
-U[User]
-L[Laptop<br/>Orchestrator]
-A[Agents]
-M[(Memory)]
-R[Runtime]
-P[PC<br/>LLM Host]
-UI[ProjSkep UI]
-
-U -->|Intent| L
-L --> A
-A --> M
-A --> R
-R --> P
-P --> R
-R --> UI
-UI --> U
+graph TD
+    User([User Intent]) --> Baton[Baton Orchestration Layer]
+    Baton --> Agents[Agent Nodes]
+    Baton --> Memory[Memory Manager]
+    Baton --> Workflows[Workflow Engine]
+    Baton --> ProjSkep[ProjSkep Neural Observatory]
+    Agents --> Ollama[Ollama LLM]
+    Memory --> ChromaDB[ChromaDB]
+    ProjSkep --> Telemetry[Real-time Telemetry]
+    ProjSkep --> SemanticContinuity[Semantic Continuity]
 ```
+
+See [docs/architecture.md](docs/architecture.md) for full component breakdown.
 
 ### Execution Model
 
@@ -62,8 +56,6 @@ The system distributes responsibility:
 | UI | Observability |
 
 The laptop does **not** run heavy models.
-
-Architecture:
 
 ```txt
 Laptop:
@@ -87,69 +79,7 @@ Continuity
 Trace storage
 ```
 
----
-
-# Why Baton Exists
-
-Traditional AI workflows fail because:
-
-- Context resets between sessions
-- Architectural decisions disappear
-- Debugging arcs lose continuity
-- Agents drift from established reasoning
-- Long projects accumulate cognitive fragmentation
-
-Baton attempts to preserve:
-
-```txt
-Intent
- ↓
-Context
- ↓
-Execution
- ↓
-Memory
- ↓
-Continuity
-```
-
-The objective is not bigger models.
-
-The objective is sustained reasoning.
-
----
-
-# Repository Structure
-
-```txt
-baton/
-│
-├── agents/              # Specialized execution agents
-├── configs/             # Runtime configuration
-├── docs/                # Documentation
-├── graphs/              # Topology/state graphs
-├── memory/              # Persistence layer
-├── retrieval/           # Context retrieval
-├── runtime/             # Event execution
-├── tasks/               # Task definitions
-│
-├── projskep_ui/         # Observability interface
-├── projskep_server/     # Backend services
-├── projskep_memory/     # Memory subsystem
-│
-├── orchestrator.py      # Main routing logic
-├── multi_agent.py       # Agent coordination
-├── watcher_agent.py     # Filesystem monitoring
-├── tools_agent.py       # Tool execution
-├── projskep_core.py     # Core runtime
-│
-├── launch_dev.ps1       # Full stack boot
-└── README.md
-```
-
----
-
-# Cognitive Execution Flow
+### Cognitive Execution Flow
 
 ```mermaid
 sequenceDiagram
@@ -175,13 +105,9 @@ R->>UI: Visualize
 UI-->>U: Feedback
 ```
 
-Execution becomes observable.
+Execution becomes observable. Reasoning becomes traceable.
 
-Reasoning becomes traceable.
-
----
-
-# Persistence Model
+### Persistence Model
 
 ```mermaid
 graph TD
@@ -202,102 +128,127 @@ T --> M
 M --> F
 ```
 
-Every execution becomes future context.
-
-The system accumulates continuity instead of restarting cognition.
+Every execution becomes future context. The system accumulates continuity instead of restarting cognition.
 
 ---
 
-# Core Principles
+## Why Baton Exists
 
-## Retrieval First
+Traditional AI workflows fail because:
 
-Bounded context outperforms unbounded context.
+- Context resets between sessions
+- Architectural decisions disappear
+- Debugging arcs lose continuity
+- Agents drift from established reasoning
+- Long projects accumulate cognitive fragmentation
 
-The system retrieves relevant state rather than maximizing tokens.
+Baton attempts to preserve:
 
----
+```txt
+Intent
+ ↓
+Context
+ ↓
+Execution
+ ↓
+Memory
+ ↓
+Continuity
+```
 
-## Continuity Preservation
-
-Architectural decisions persist across sessions.
-
-Reasoning becomes cumulative.
-
----
-
-## Event Driven
-
-Filesystem changes, runtime events, and user actions trigger execution.
-
----
-
-## Observability
-
-Complex systems become manageable when cognition is visible.
+The objective is not bigger models. The objective is sustained reasoning.
 
 ---
 
-## Sparse Activation
+## Run in 5 minutes
 
-Only relevant agents activate for a given task.
+**Requirements**
+- Python 3.11+
+- Docker
+- Ollama running locally with `phi4` model
 
-Reduce noise.
+**Install**
+```bash
+git clone https://github.com/swappy-ops/baton
+cd baton
+cp .env.example .env
+docker build -t baton:latest .
+docker run --rm -d --name baton -p 8000:8000 -v $(pwd):/app baton:latest
+```
 
-Increase signal.
+**Verify**
+```bash
+curl http://localhost:8000/api/status
+# → {"status":"operational","system":"Baton Neural Observatory"}
+```
 
----
+Open `http://localhost:8000` — observatory UI loads with live telemetry.
 
-# Running Baton
-
-Start the full stack:
-
+**Dev mode**
 ```bash
 ./launch_dev.ps1
 ```
 
-This boots:
-
-- Backend services
-- Agent runtime
-- WebSocket bus
-- Retrieval systems
-- Memory services
-- Observability UI
-- Health monitoring
+This boots backend services, agent runtime, WebSocket bus, retrieval systems, memory services, observability UI, and health monitoring.
 
 ---
 
-# Current State
+## Integrations
 
-Implemented:
-
-- [x] Multi-agent runtime
-- [x] Retrieval layer
-- [x] Memory persistence
-- [x] Orchestration core
-- [x] Event watcher
-- [x] ProjSkep integration
-- [x] Agent coordination
-
-In Progress:
-
-- [ ] Forensic replay engine
-- [ ] Adaptive telemetry
-- [ ] Agent negotiation visualization
-- [ ] Advanced topology mapping
-- [ ] Runtime diagnostics
-
-Planned:
-
-- [ ] Distributed execution
-- [ ] Long-horizon memory optimization
-- [ ] Visual reasoning replay
-- [ ] Multi-host orchestration
+| System | Role | Docs |
+|--------|------|------|
+| ProjSkep | Semantic memory, neural observatory | [integrations/projskep](integrations/projskep/README.md) |
+| Ollama | Local LLM inference | [docs/integrations.md](docs/integrations.md) |
+| ChromaDB | Vector retrieval | [docs/integrations.md](docs/integrations.md) |
 
 ---
 
-# Example Workflow
+## Core Principles
+
+### Retrieval First
+
+Bounded context outperforms unbounded context. The system retrieves relevant state rather than maximizing tokens.
+
+### Continuity Preservation
+
+Architectural decisions persist across sessions. Reasoning becomes cumulative.
+
+### Event Driven
+
+Filesystem changes, runtime events, and user actions trigger execution.
+
+### Observability
+
+Complex systems become manageable when cognition is visible.
+
+### Sparse Activation
+
+Only relevant agents activate for a given task. Reduce noise. Increase signal.
+
+---
+
+## Modes
+
+| Mode | Focus |
+|------|-------|
+| DEBUG | Forensic trace, dependency propagation |
+| RESEARCH | Retrieval-heavy, semantic exploration |
+| BUILD | Code generation, continuity checks |
+| DEEP_WORK | Noise suppression, focused context |
+
+Switch via CMD+K in the UI.
+
+---
+
+## Methodology
+
+- [Global Rules](docs/methodology/global-rules.md)
+- [Failure Patterns](docs/methodology/failure-patterns.md)
+- [Architecture](docs/architecture.md)
+
+---
+
+## Example Workflow
 
 ```txt
 User:
@@ -341,7 +292,7 @@ Preserved continuity
 
 ---
 
-# Long-Term Vision
+## Long-Term Vision
 
 Traditional IDE:
 
@@ -373,16 +324,31 @@ The system becomes an external cognitive layer rather than a temporary assistant
 
 ---
 
-# Philosophy
+## Roadmap
 
-> Complexity is managed through observability.
-
-The goal is not replacing human reasoning.
-
-The goal is preserving it.
+- [ ] Forensic Playback 2.0
+- [ ] Adaptive telemetry noise suppression
+- [ ] Multi-agent bridge visualization
+- [ ] Ollama agent hot-swap
+- [ ] Distributed execution
+- [ ] Long-horizon memory optimization
+- [ ] Visual reasoning replay
+- [ ] Multi-host orchestration
 
 ---
 
-Built by:
+## Philosophy
 
-**@swappy-ops**
+> Complexity is managed through observability.
+
+The goal is not replacing human reasoning. The goal is preserving it.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE)
+
+---
+
+Built by **@swappy-ops**
