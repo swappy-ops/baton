@@ -1,9 +1,5 @@
 # Runtime/generated
 logs/
-completed_tasks/
-failed_tasks/
-incoming_tasks/
-processing_tasks/
 
 # Local artifacts
 torch
@@ -28,8 +24,6 @@ __pycache__/
 .venv/
 venv/
 .env
-baton_ui/node_modules/
-baton_ui/dist/
-*.ps1
-completed_tasks/
-incoming_tasks/
+
+# Archive
+archive/

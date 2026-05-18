@@ -6,6 +6,9 @@ from datetime import datetime
 import asyncio
 import json
 import os
+import time
+
+START_TIME = time.time()
 
 from baton_server.websocket.manager import manager
 from baton_server.api import router as api_router

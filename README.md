@@ -1,26 +1,57 @@
 # Baton
+
 ### Cognitive Orchestration Layer for Persistent AI Workflows
 
-Baton is a local-first orchestration system designed to preserve semantic continuity across AI-assisted engineering workflows.
+Baton is a local-first orchestration system that preserves semantic continuity across AI-assisted engineering workflows.
 
 Modern AI systems are powerful at execution but weak at continuity. Context resets, architectural decisions disappear, and long debugging sessions fragment over time.
 
-Baton exists to preserve:
+Baton preserves: **Intent → Context → Execution → Memory → Continuity**
 
-**Intent → Context → Execution → Memory → Continuity**
+---
 
-Its architecture separates:
+## Quick Start
 
-- **Human → Strategic intent**
-- **Laptop → Orchestration**
-- **PC → Model hosting**
-- **Memory → Persistence**
-- **Agents → Specialized execution**
-- **Observability → Cognitive visualization**
+### Option 1: Docker (Recommended)
 
-Goal:
+```bash
+git clone https://github.com/swappy-ops/baton
+cd baton
+cp .env.example .env
+docker compose up -d
+```
 
-Reduce semantic drift, preserve reasoning continuity, and maintain architectural coherence during long AI-assisted workflows.
+Open http://localhost:8000 — the Neural Observatory UI loads with live telemetry.
+
+Verify:
+```bash
+curl http://localhost:8000/api/status
+```
+
+### Option 2: Local Install
+
+```bash
+git clone https://github.com/swappy-ops/baton
+cd baton
+./install.sh    # Linux/macOS
+# or
+.\install.ps1   # Windows
+./run.sh        # Linux/macOS
+# or
+.\run.ps1       # Windows
+```
+
+### Option 3: Manual
+
+```bash
+git clone https://github.com/swappy-ops/baton
+cd baton
+python3 -m venv .venv
+source .venv/bin/activate   # or .venv\Scripts\Activate.ps1 on Windows
+pip install -r requirements-server.txt
+cp .env.example .env
+uvicorn baton_server.main:app --host 0.0.0.0 --port 8000
+```
 
 ---
 
@@ -28,202 +59,72 @@ Reduce semantic drift, preserve reasoning continuity, and maintain architectural
 
 ```mermaid
 graph TD
-    User([User Intent]) --> Baton[Baton Orchestration Layer]
-    Baton --> Agents[Agent Nodes]
-    Baton --> Memory[Memory Manager]
-    Baton --> Workflows[Workflow Engine]
-    Baton --> ProjSkep[ProjSkep Neural Observatory]
-    Agents --> Ollama[Ollama LLM]
-    Memory --> ChromaDB[ChromaDB]
-    ProjSkep --> Telemetry[Real-time Telemetry]
-    ProjSkep --> SemanticContinuity[Semantic Continuity]
+    User([User Intent]) --> UI[Neural Observatory UI]
+    UI -->|HTTP + WebSocket| API[FastAPI Server :8000]
+    API --> DB[(SQLite Traces)]
+    API --> SM[Session Memory]
+    API --> EE[Event Engine]
+    EE -->|broadcast| UI
 ```
 
-See [docs/architecture.md](docs/architecture.md) for full component breakdown.
+| Component | Role |
+|-----------|------|
+| FastAPI Server | HTTP API + WebSocket hub |
+| Neural Observatory UI | Real-time telemetry dashboard (vanilla HTML/CSS/JS) |
+| SQLite | Trace logging and forensic replay |
+| Session Memory | JSON-based session state persistence |
+| Event Bus | Publish/subscribe with attention scoring |
+| Orchestration Engine | Telemetry streams and background workflows |
 
-### Execution Model
-
-The system distributes responsibility:
-
-| Layer | Responsibility |
-|--------|----------------|
-| User | Strategic intent |
-| Laptop | Orchestration + routing |
-| Agents | Task specialization |
-| Memory | Retrieval + continuity |
-| Runtime | Event execution |
-| PC | Model inference |
-| UI | Observability |
-
-The laptop does **not** run heavy models.
-
-```txt
-Laptop:
-Orchestration
-Routing
-Retrieval
-Agent coordination
-
-↓
-
-PC:
-LLM hosting
-Inference
-Model execution
-
-↓
-
-Memory:
-Persistence
-Continuity
-Trace storage
-```
-
-### Cognitive Execution Flow
-
-```mermaid
-sequenceDiagram
-
-participant U as User
-participant O as Orchestrator
-participant M as Memory
-participant A as Agent
-participant P as LLM Host
-participant R as Runtime
-participant UI as Interface
-
-U->>O: Intent
-O->>M: Retrieve context
-M-->>O: Relevant state
-
-O->>A: Execute task
-A->>P: Inference
-P-->>A: Response
-
-A->>R: Update runtime
-R->>UI: Visualize
-UI-->>U: Feedback
-```
-
-Execution becomes observable. Reasoning becomes traceable.
-
-### Persistence Model
-
-```mermaid
-graph TD
-
-E[Event]
-R[Retrieve Context]
-A[Agent Execution]
-O[Output]
-T[Trace]
-M[(Memory)]
-F[Future Sessions]
-
-E --> R
-R --> A
-A --> O
-O --> T
-T --> M
-M --> F
-```
-
-Every execution becomes future context. The system accumulates continuity instead of restarting cognition.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full component breakdown.
 
 ---
 
-## Why Baton Exists
+## API Endpoints
 
-Traditional AI workflows fail because:
-
-- Context resets between sessions
-- Architectural decisions disappear
-- Debugging arcs lose continuity
-- Agents drift from established reasoning
-- Long projects accumulate cognitive fragmentation
-
-Baton attempts to preserve:
-
-```txt
-Intent
- ↓
-Context
- ↓
-Execution
- ↓
-Memory
- ↓
-Continuity
-```
-
-The objective is not bigger models. The objective is sustained reasoning.
-
----
-
-## Run in 5 minutes
-
-**Requirements**
-- Python 3.11+
-- Docker
-- Ollama running locally with `phi4` model
-
-**Install**
-```bash
-git clone https://github.com/swappy-ops/baton
-cd baton
-cp .env.example .env
-docker build -t baton:latest .
-docker run --rm -d --name baton -p 8000:8000 -v $(pwd):/app baton:latest
-```
-
-**Verify**
-```bash
-curl http://localhost:8000/api/status
-# → {"status":"operational","system":"Baton Neural Observatory"}
-```
-
-Open `http://localhost:8000` — observatory UI loads with live telemetry.
-
-**Dev mode**
-```bash
-./launch_dev.ps1
-```
-
-This boots backend services, agent runtime, WebSocket bus, retrieval systems, memory services, observability UI, and health monitoring.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Neural Observatory UI |
+| `/api/status` | GET | System health check |
+| `/api/metrics` | GET | System metrics (DB size, trace count, etc.) |
+| `/api/session` | GET | Current session state |
+| `/api/intent` | POST | Submit user intent |
+| `/api/friction` | POST | Report friction point |
+| `/ws` | WebSocket | Real-time event stream |
 
 ---
 
 ## Integrations
 
-| System | Role | Docs |
-|--------|------|------|
-| ProjSkep | Semantic memory, neural observatory | [integrations/projskep](integrations/projskep/README.md) |
-| Ollama | Local LLM inference | [docs/integrations.md](docs/integrations.md) |
-| ChromaDB | Vector retrieval | [docs/integrations.md](docs/integrations.md) |
+| System | Role |
+|--------|------|
+| Ollama | Local LLM inference (optional) |
+| ChromaDB | Vector retrieval (used by baton/ package) |
 
 ---
 
-## Core Principles
+## Project Structure
 
-### Retrieval First
-
-Bounded context outperforms unbounded context. The system retrieves relevant state rather than maximizing tokens.
-
-### Continuity Preservation
-
-Architectural decisions persist across sessions. Reasoning becomes cumulative.
-
-### Event Driven
-
-Filesystem changes, runtime events, and user actions trigger execution.
-
-### Observability
-
-Complex systems become manageable when cognition is visible.
-
-### Sparse Activation
-
-Only relevant agents activate for a given task. Reduce noise. Increase signal.
+```
+baton/
+├── baton_server/          # FastAPI server (runtime)
+│   ├── main.py            # Entry point
+│   ├── api/               # REST endpoints
+│   ├── websocket/         # WebSocket manager
+│   ├── db/                # SQLite + session storage
+│   ├── services/          # Event bus, attention engine, etc.
+│   ├── orchestration/     # Telemetry engine
+│   ├── schemas/           # Pydantic models
+│   └── static/            # Observatory UI
+├── baton/                 # Agent orchestration package (optional ML stack)
+│   ├── agents/            # LangGraph nodes
+│   ├── memory/            # Memory management
+│   ├── retrieval/         # ChromaDB pipeline
+│   ├── runtime/           # Task contracts, budgets, stability
+│   └── graphs/            # LangGraph workflows
+├── archive/               # Archived prototypes and legacy files
+└── docs/                  # Documentation
+```
 
 ---
 
@@ -240,108 +141,31 @@ Switch via CMD+K in the UI.
 
 ---
 
-## Methodology
+## Core Principles
 
-- [Global Rules](docs/methodology/global-rules.md)
-- [Failure Patterns](docs/methodology/failure-patterns.md)
-- [Architecture](docs/architecture.md)
-
----
-
-## Example Workflow
-
-```txt
-User:
-"Debug this failing VST3 build"
-
-↓
-
-Retrieve:
-Previous traces
-Architecture decisions
-Related files
-
-↓
-
-Agent:
-Analyze
-Execute
-Reason
-
-↓
-
-Model Host:
-Inference
-
-↓
-
-Runtime:
-Update state
-
-↓
-
-Memory:
-Store trace
-
-↓
-
-Future:
-Faster reasoning
-Preserved continuity
-```
-
----
-
-## Long-Term Vision
-
-Traditional IDE:
-
-```txt
-Human → Code
-```
-
-Baton:
-
-```txt
-Human
- ↓
-Intent
- ↓
-Agents
- ↓
-Memory
- ↓
-Runtime
- ↓
-Models
- ↓
-Feedback
- ↓
-Persistence
-```
-
-The system becomes an external cognitive layer rather than a temporary assistant.
+- **Retrieval First** — Bounded context outperforms unbounded context
+- **Continuity Preservation** — Architectural decisions persist across sessions
+- **Event Driven** — Filesystem changes and user actions trigger execution
+- **Observability** — Complex systems become manageable when cognition is visible
+- **Sparse Activation** — Only relevant agents activate for a given task
 
 ---
 
 ## Roadmap
 
+- [ ] Wire Ollama agents into the server runtime
+- [ ] Build React/Vite frontend to replace static HTML UI
+- [ ] Add pre-commit hooks for commit discipline
 - [ ] Forensic Playback 2.0
 - [ ] Adaptive telemetry noise suppression
 - [ ] Multi-agent bridge visualization
-- [ ] Ollama agent hot-swap
 - [ ] Distributed execution
-- [ ] Long-horizon memory optimization
-- [ ] Visual reasoning replay
-- [ ] Multi-host orchestration
 
 ---
 
-## Philosophy
+## Contributing
 
-> Complexity is managed through observability.
-
-The goal is not replacing human reasoning. The goal is preserving it.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 
 ---
 

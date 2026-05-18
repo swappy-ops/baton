@@ -7,8 +7,8 @@ __pycache__/
 .git
 .gitignore
 .env
-projskep_ui
-projskep_memory
+baton_ui
+baton_memory
 *.ps1
 xterm*.svg
 *.md

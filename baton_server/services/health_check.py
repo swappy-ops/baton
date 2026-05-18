@@ -26,7 +26,7 @@ async def check_health():
 
     # Check WebSocket (Basic port check)
     import socket
-    s = socket.socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect(("localhost", 8000))
         print("✅ WebSocket Port: OPEN")
