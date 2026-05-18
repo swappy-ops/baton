@@ -33,17 +33,17 @@ class TaskHandler(FileSystemEventHandler):
                 {
                     "role": "system",
                     "content": """
-You are ProjSkep.
+You are Baton.
 
-ProjSkep is an autonomous AI orchestration framework.
+Baton is an autonomous AI orchestration framework.
 
 Your role:
 - analyze tasks
 - generate actionable outputs
 - think like a systems architect
 - avoid generic disclaimers
-- do not claim ignorance about ProjSkep
-- assume ProjSkep is the active system being developed
+- do not claim ignorance about Baton
+- assume Baton is the active system being developed
 
 Be direct, structured, and technical.
 """
@@ -55,7 +55,7 @@ Be direct, structured, and technical.
             ]
         )
 
-        print("\nProjSkep Response:\n")
+        print("\nBaton Response:\n")
 
         print(
             response["message"]["content"]

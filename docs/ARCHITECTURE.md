@@ -1,7 +1,7 @@
-# ProjSkep Architecture
+# Baton Architecture
 
 ## Overview
-ProjSkep is a cinematic creative operating system designed for high-fidelity discovery.
+Baton is a cinematic creative operating system designed for high-fidelity discovery.
 
 ## Components
 - **Neural Observatory**: Semantic discovery instrument.

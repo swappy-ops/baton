@@ -1,0 +1,36 @@
+name: Repo Audit
+on: [push, pull_request]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for embedded ProjSkep directories
+        run: |
+          FOUND=$(find . -maxdepth 1 -type d \( -name 'projskep_memory' -o -name 'projskep_server' -o -name 'projskep_ui' \) | wc -l)
+          if [ "$FOUND" -gt 0 ]; then
+            echo "ERROR: Embedded ProjSkep directories found at root. Move to integrations/projskep/"
+            find . -maxdepth 1 -type d -name 'projskep*'
+            exit 1
+          fi
+          echo "OK: No embedded ProjSkep directories"
+
+      - name: Check README has required sections
+        run: |
+          for section in "Architecture" "Quick Start" "Run in 5" "Integrations" "Roadmap"; do
+            if ! grep -q "$section" README.md; then
+              echo "WARNING: README.md missing section: $section"
+            fi
+          done
+
+      - name: Check LICENSE exists
+        run: |
+          if [ ! -f LICENSE ]; then
+            echo "ERROR: LICENSE file missing"
+            exit 1
+          fi
+
+      - name: Check for huge files
+        run: |
+          find . -not -path './.git/*' -not -path './baton_memory/*' -size +5M -exec echo "LARGE FILE: {}" \;

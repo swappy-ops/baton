@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baton — Neural Observatory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syncopate:wght@400;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050608;
+    --surface: #0a0c10;
+    --surface2: #0f1218;
+    --border: #1a1f2e;
+    --border-glow: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #0066cc;
+    --accent-dim: rgba(0, 212, 255, 0.12);
+    --warn: #ff6b35;
+    --warn-dim: rgba(255, 107, 53, 0.12);
+    --ok: #00ff88;
+    --ok-dim: rgba(0, 255, 136, 0.08);
+    --text: #c8d6e8;
+    --text-dim: #4a5568;
+    --text-bright: #e8f4fd;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-display: 'Syncopate', sans-serif;
+    --font-body: 'DM Mono', monospace;
+    --ws-status: #ff6b35;
+    --glow: 0 0 20px rgba(0, 212, 255, 0.15);
+    --glow-strong: 0 0 40px rgba(0, 212, 255, 0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Noise grain */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ── LAYOUT ── */
+  #shell {
+    display: grid;
+    grid-template-rows: 44px 1fr 28px;
+    grid-template-columns: 220px 1fr 280px;
+    height: 100vh;
+    gap: 0;
+  }
+
+  /* ── TOPBAR ── */
+  #topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+    position: relative;
+    z-index: 10;
+  }
+
+  #logo {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: 0 0 20px rgba(0,212,255,0.5);
+  }
+
+  #logo span {
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .topbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  #intent-bar {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .intent-btn {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .intent-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent);
+  }
+
+  .intent-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,212,255,0.2);
+  }
+
+  #ws-indicator {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  #ws-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ws-status);
+    transition: background 0.3s;
+  }
+
+  #ws-dot.connected { background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: pulse-dot 2s infinite; }
+  #ws-dot.connecting { background: var(--warn); animation: blink 0.8s infinite; }
+  #ws-dot.error { background: #ff3355; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  #server-url-display {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    padding: 2px 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  /* ── LEFT PANEL ── */
+  #left-panel {
+    grid-row: 2;
+    grid-column: 1;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    padding: 10px 14px 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* System Status */
+  #sys-status {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+
+  .stat-key { color: var(--text-dim); }
+
+  .stat-val {
+    color: var(--accent);
+    font-size: 10px;
+  }
+
+  .stat-val.ok { color: var(--ok); }
+  .stat-val.warn { color: var(--warn); }
+
+  /* Context Budget gauges */
+  #budget-section {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gauge-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .gauge-header {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+  }
+
+  .gauge-bar {
+    height: 3px;
+    background: var(--border);
+    position: relative;
+    overflow: visible;
+  }
+
+  .gauge-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+  }
+
+  .gauge-fill::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -2px;
+    width: 1px;
+    height: 7px;
+    background: inherit;
+    filter: brightness(1.5);
+  }
+
+  .gauge-fill.warn { background: var(--warn); }
+  .gauge-fill.ok { background: var(--ok); }
+
+  /* Session info */
+  #session-section {
+    padding: 12px 14px;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .session-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .session-key {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .session-val {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-bright);
+    background: var(--surface2);
+    padding: 3px 6px;
+    border-left: 2px solid var(--accent2);
+  }
+
+  .session-val.empty {
+    color: var(--text-dim);
+    border-left-color: var(--border);
+    font-style: italic;
+  }
+
+  /* ── MAIN PANEL ── */
+  #main-panel {
+    grid-row: 2;
+    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* Topology Canvas */
+  #topology-section {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #topology-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  #topology-overlay {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  #topology-corner {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    display: flex;
+    gap: 12px;
+    pointer-events: none;
+  }
+
+  .topo-legend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Intent Input */
+  #intent-section {
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  #intent-input-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(0,212,255,0.4);
+  }
+
+  #intent-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 0;
+    outline: none;
+    transition: border-color 0.2s;
+    caret-color: var(--accent);
+  }
+
+  #intent-input:focus {
+    border-bottom-color: var(--accent);
+  }
+
+  #intent-input::placeholder {
+    color: var(--text-dim);
+    font-size: 10px;
+  }
+
+  #intent-submit {
+    padding: 5px 12px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent2);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  #intent-submit:hover {
+    background: rgba(0,212,255,0.2);
+    box-shadow: var(--glow);
+  }
+
+  #intent-submit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* ── RIGHT PANEL ── */
+  #right-panel {
+    grid-row: 2;
+    grid-column: 3;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Event Log */
+  #event-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  #event-log::-webkit-scrollbar { width: 3px; }
+  #event-log::-webkit-scrollbar-track { background: transparent; }
+  #event-log::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .event-entry {
+    padding: 5px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 2px solid transparent;
+    animation: event-in 0.2s ease;
+  }
+
+  @keyframes event-in {
+    from { opacity: 0; transform: translateX(6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .event-entry.info { border-left-color: var(--accent2); }
+  .event-entry.warn { border-left-color: var(--warn); }
+  .event-entry.ok { border-left-color: var(--ok); }
+  .event-entry.error { border-left-color: #ff3355; }
+
+  .event-time {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-dim);
+  }
+
+  .event-msg {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .event-entry.ok .event-msg { color: var(--ok); }
+  .event-entry.warn .event-msg { color: var(--warn); }
+  .event-entry.error .event-msg { color: #ff3355; }
+
+  /* Workflow list */
+  #workflow-section {
+    max-height: 180px;
+    border-top: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+
+  .workflow-item {
+    padding: 5px 14px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: default;
+  }
+
+  .workflow-item::before {
+    content: '◦';
+    color: var(--warn);
+    font-size: 10px;
+  }
+
+  .workflow-empty {
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* Settings row */
+  #settings-row {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #server-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  #server-url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 4px 6px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #server-url-input:focus { border-color: var(--accent2); }
+
+  #connect-btn {
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--accent2);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  #connect-btn:hover { background: var(--accent-dim); }
+
+  /* ── STATUSBAR ── */
+  #statusbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  #statusbar-msg {
+    margin-right: auto;
+    color: var(--text-dim);
+  }
+
+  .statusbar-chip {
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    font-size: 8px;
+  }
+
+  .statusbar-chip.active-mode {
+    border-color: var(--accent2);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  /* ── TOPOLOGY SVG NODES ── */
+  .topo-node {
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .topo-node-rect {
+    fill: var(--surface2, #0f1218);
+    stroke: #1a1f2e;
+    stroke-width: 1;
+    rx: 2;
+    transition: all 0.3s;
+  }
+
+  .topo-node.active .topo-node-rect {
+    stroke: #00d4ff;
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.4));
+  }
+
+  .topo-node.warn .topo-node-rect {
+    stroke: #ff6b35;
+    filter: drop-shadow(0 0 6px rgba(255,107,53,0.3));
+  }
+
+  .topo-edge {
+    stroke: #1a1f2e;
+    stroke-width: 1;
+    fill: none;
+    transition: stroke 0.3s;
+  }
+
+  .topo-edge.active {
+    stroke: #1e3a5f;
+    animation: edge-flow 2s linear infinite;
+  }
+
+  @keyframes edge-flow {
+    0% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  /* ── MODALS ── */
+  #cmd-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 15vh;
+  }
+
+  #cmd-overlay.open { display: flex; }
+
+  #cmd-palette {
+    width: 480px;
+    background: var(--surface2);
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 0 60px rgba(0,212,255,0.1), 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  #cmd-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #cmd-prefix {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-bright);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    caret-color: var(--accent);
+  }
+
+  #cmd-input::placeholder { color: var(--text-dim); }
+
+  #cmd-results {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .cmd-item {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.1s;
+  }
+
+  .cmd-item:hover, .cmd-item.focused {
+    background: var(--accent-dim);
+    border-left-color: var(--accent);
+  }
+
+  .cmd-icon {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    width: 14px;
+    text-align: center;
+  }
+
+  .cmd-text {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text);
+  }
+
+  .cmd-shortcut {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    color: var(--text-dim);
+    padding: 2px 5px;
+    border: 1px solid var(--border);
+  }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Pulse animation for active nodes */
+  @keyframes pulse-ring {
+    0% { r: 4; opacity: 0.8; }
+    100% { r: 12; opacity: 0; }
+  }
+
+  .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+
+  /* Boot sequence */
+  #boot-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 900;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 0.6s;
+  }
+
+  #boot-overlay.done {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #boot-title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(0,212,255,0.6);
+    text-transform: uppercase;
+  }
+
+  #boot-log {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: left;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .boot-line {
+    opacity: 0;
+    animation: boot-appear 0.1s forwards;
+  }
+
+  @keyframes boot-appear {
+    to { opacity: 1; }
+  }
+
+  .boot-line.ok { color: var(--ok); }
+  .boot-line.err { color: #ff3355; }
+
+  #boot-bar {
+    width: 320px;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #boot-progress {
+    position: absolute;
+    left: 0; top: 0; height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+    box-shadow: 0 0 10px var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<!-- BOOT OVERLAY -->
+<div id="boot-overlay">
+  <div id="boot-title">BATON</div>
+  <div id="boot-log"></div>
+  <div id="boot-bar"><div id="boot-progress"></div></div>
+</div>
+
+<!-- MAIN SHELL -->
+<div id="shell">
+
+  <!-- TOPBAR -->
+  <header id="topbar">
+    <div id="logo">BATON <span>/ NEURAL OBSERVATORY</span></div>
+    <div class="topbar-divider"></div>
+    <div id="intent-bar">
+      <button class="intent-btn active" data-mode="DEBUG" onclick="setMode(this)">DEBUG</button>
+      <button class="intent-btn" data-mode="RESEARCH" onclick="setMode(this)">RESEARCH</button>
+      <button class="intent-btn" data-mode="BUILD" onclick="setMode(this)">BUILD</button>
+      <button class="intent-btn" data-mode="DEEP_WORK" onclick="setMode(this)">DEEP WORK</button>
+    </div>
+    <div class="topbar-divider"></div>
+    <span id="server-url-display">localhost:8000</span>
+    <div id="ws-indicator">
+      <div id="ws-dot"></div>
+      <span id="ws-label">OFFLINE</span>
+    </div>
+  </header>
+
+  <!-- LEFT PANEL -->
+  <aside id="left-panel">
+    <div class="panel-label">// System Status</div>
+    <div id="sys-status">
+      <div class="stat-row">
+        <span class="stat-key">API</span>
+        <span class="stat-val" id="api-status">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">System</span>
+        <span class="stat-val" id="sys-name" style="font-size:8px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">WS Events</span>
+        <span class="stat-val" id="event-count">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Last Intent</span>
+        <span class="stat-val" id="last-intent">—</span>
+      </div>
+    </div>
+
+    <div class="panel-label">// Context Budget</div>
+    <div id="budget-section">
+      <div class="gauge-row">
+        <div class="gauge-header"><span>Prompt Overhead</span><span id="g-prompt">0%</span></div>
+        <div class="gauge-bar"><div class="gauge-fill" id="gf-prompt" style="width:0%"></div></div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-header"><span>Memory Injection</span><span id="g-memory">0%</span></div>
+        <div class="gauge-bar"><div class="gauge-fill ok" id="gf-memory" style="width:0%"></div></div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-header"><span>Semantic Redundancy</span><span id="g-sem">0%</span></div>
+        <div class="gauge-bar"><div class="gauge-fill warn" id="gf-sem" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="panel-label">// Session State</div>
+    <div id="session-section">
+      <div class="session-field">
+        <span class="session-key">Active Investigation</span>
+        <span class="session-val empty" id="active-inv">null</span>
+      </div>
+      <div class="session-field">
+        <span class="session-key">Architecture Focus</span>
+        <span class="session-val empty" id="arch-focus">null</span>
+      </div>
+      <div class="session-field">
+        <span class="session-key">Active Mode</span>
+        <span class="session-val" id="session-mode">DEBUG</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN PANEL -->
+  <main id="main-panel">
+    <!-- Topology Map -->
+    <div id="topology-section">
+      <div id="topology-overlay">// TOPOLOGY MAP — LIVE</div>
+      <svg id="topology-canvas" viewBox="0 0 700 340" preserveAspectRatio="xMidYMid meet">
+        <!-- Static topology based on README architecture -->
+        <defs>
+          <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#1e3a5f"/>
+          </marker>
+          <marker id="arrow-active" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#00d4ff" opacity="0.6"/>
+          </marker>
+          <filter id="glow-filter">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- EDGES -->
+        <!-- User → UI -->
+        <line class="topo-edge active" x1="60" y1="50" x2="60" y2="90" stroke-dasharray="4,4" marker-end="url(#arrow-active)"/>
+        <!-- UI → API -->
+        <line class="topo-edge active" x1="60" y1="138" x2="200" y2="155" stroke-dasharray="4,4" marker-end="url(#arrow-active)"/>
+        <!-- API → Orchestrator -->
+        <line class="topo-edge" x1="270" y1="155" x2="350" y2="155" marker-end="url(#arrow)"/>
+        <!-- Orchestrator → Router -->
+        <line class="topo-edge" x1="420" y1="155" x2="490" y2="120" marker-end="url(#arrow)"/>
+        <!-- Router → Specialist -->
+        <line class="topo-edge" x1="560" y1="105" x2="560" y2="155" marker-end="url(#arrow)"/>
+        <!-- Specialist → Distillation -->
+        <line class="topo-edge" x1="560" y1="185" x2="560" y2="235" marker-end="url(#arrow)"/>
+        <!-- Specialist ← → Pipeline -->
+        <line class="topo-edge" x1="510" y1="165" x2="420" y2="220" marker-end="url(#arrow)"/>
+        <!-- Pipeline → Quality -->
+        <line class="topo-edge" x1="350" y1="235" x2="350" y2="275" marker-end="url(#arrow)"/>
+        <!-- Quality → API (telemetry) -->
+        <path class="topo-edge" d="M320,285 Q235,285 235,200 Q235,155 235,155" fill="none" marker-end="url(#arrow)" stroke-dasharray="3,3"/>
+        <!-- API → UI (WS) -->
+        <path class="topo-edge active" d="M200,140 Q125,120 85,130" fill="none" stroke-dasharray="4,4" marker-end="url(#arrow-active)"/>
+        <!-- Distillation → Memory -->
+        <line class="topo-edge" x1="530" y1="250" x2="460" y2="295" marker-end="url(#arrow)"/>
+        <!-- API → Traces -->
+        <line class="topo-edge" x1="235" y1="168" x2="235" y2="290" marker-end="url(#arrow)"/>
+
+        <!-- NODES -->
+        <!-- User Intent -->
+        <g class="topo-node active" transform="translate(30,25)">
+          <rect class="topo-node-rect" width="60" height="22" rx="2"/>
+          <text x="30" y="15" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="7" fill="#00d4ff">USER INTENT</text>
+          <circle cx="30" cy="30" r="4" fill="none" stroke="#00d4ff" opacity="0.5" class="pulse-ring"/>
+        </g>
+
+        <!-- Neural Observatory UI -->
+        <g class="topo-node active" transform="translate(25,90)">
+          <rect class="topo-node-rect" width="70" height="48" rx="2"/>
+          <text x="35" y="14" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">NEURAL OBS</text>
+          <text x="35" y="24" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">UI</text>
+          <text x="35" y="38" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5.5" fill="#4a5568">CMD+K/Intent</text>
+        </g>
+
+        <!-- FastAPI -->
+        <g class="topo-node active" id="api-node" transform="translate(195,135)">
+          <rect class="topo-node-rect" width="75" height="40" rx="2"/>
+          <text x="37" y="14" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">FASTAPI</text>
+          <text x="37" y="24" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">SERVER</text>
+          <text x="37" y="35" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5.5" fill="#4a5568">:8000</text>
+        </g>
+
+        <!-- Orchestrator -->
+        <g class="topo-node" transform="translate(342,138)">
+          <rect class="topo-node-rect" width="80" height="38" rx="2"/>
+          <text x="40" y="14" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">EVENT</text>
+          <text x="40" y="24" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">ORCHESTRATOR</text>
+          <text x="40" y="34" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5" fill="#4a5568">EVENT BUS</text>
+        </g>
+
+        <!-- Router -->
+        <g class="topo-node warn" transform="translate(485,88)">
+          <rect class="topo-node-rect" width="78" height="38" rx="2"/>
+          <text x="39" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#ff6b35">INTENT ROUTER</text>
+          <text x="39" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5.5" fill="#4a5568">phi4</text>
+          <text x="39" y="33" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5" fill="#4a5568">OLLAMA</text>
+        </g>
+
+        <!-- Specialist -->
+        <g class="topo-node" transform="translate(520,153)">
+          <rect class="topo-node-rect" width="82" height="32" rx="2"/>
+          <text x="41" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">SPECIALIST</text>
+          <text x="41" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">NODES</text>
+        </g>
+
+        <!-- Distillation -->
+        <g class="topo-node" transform="translate(520,235)">
+          <rect class="topo-node-rect" width="82" height="32" rx="2"/>
+          <text x="41" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">DISTILLATION</text>
+          <text x="41" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">NODE</text>
+        </g>
+
+        <!-- Retrieval Pipeline -->
+        <g class="topo-node" transform="translate(345,212)">
+          <rect class="topo-node-rect" width="80" height="40" rx="2"/>
+          <text x="40" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">RETRIEVAL</text>
+          <text x="40" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">PIPELINE</text>
+          <text x="40" y="34" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5" fill="#4a5568">ChromaDB</text>
+        </g>
+
+        <!-- Quality Scorer -->
+        <g class="topo-node" transform="translate(315,268)">
+          <rect class="topo-node-rect" width="78" height="30" rx="2"/>
+          <text x="39" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">QUALITY</text>
+          <text x="39" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">SCORER</text>
+        </g>
+
+        <!-- Memory Persistence -->
+        <g class="topo-node" transform="translate(425,285)">
+          <rect class="topo-node-rect" width="78" height="40" rx="2"/>
+          <text x="39" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">MEMORY</text>
+          <text x="39" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">PERSISTENCE</text>
+          <text x="39" y="34" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5" fill="#4a5568">ChromaDB</text>
+        </g>
+
+        <!-- SQLite Traces -->
+        <g class="topo-node" transform="translate(196,285)">
+          <rect class="topo-node-rect" width="72" height="40" rx="2"/>
+          <text x="36" y="13" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">SQLITE</text>
+          <text x="36" y="23" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="6" fill="#c8d6e8">TRACES</text>
+          <text x="36" y="34" text-anchor="middle" font-family="'Share Tech Mono',monospace" font-size="5" fill="#4a5568">forensic replay</text>
+        </g>
+
+        <!-- WS label -->
+        <text x="90" y="128" font-family="'Share Tech Mono',monospace" font-size="6" fill="#1e3a5f">WS</text>
+      </svg>
+
+      <div id="topology-corner">
+        <div class="topo-legend"><div class="legend-dot" style="background:#00d4ff"></div>active</div>
+        <div class="topo-legend"><div class="legend-dot" style="background:#ff6b35"></div>processing</div>
+        <div class="topo-legend"><div class="legend-dot" style="background:#1a1f2e"></div>idle</div>
+      </div>
+    </div>
+
+    <!-- Intent Input -->
+    <div id="intent-section">
+      <span id="intent-input-label">⌘K</span>
+      <input id="intent-input" type="text" placeholder="Enter intent or command... (CMD+K)" autocomplete="off" spellcheck="false"/>
+      <button id="intent-submit" onclick="submitIntent()" disabled>SEND</button>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside id="right-panel">
+    <div class="panel-label">// Event Stream</div>
+    <div id="event-log"></div>
+
+    <div class="panel-label">// Unresolved Workflows</div>
+    <div id="workflow-section">
+      <div class="workflow-empty" id="workflow-empty">no active workflows</div>
+    </div>
+
+    <div id="settings-row">
+      <div class="panel-label" style="padding:0 0 4px;border:none;font-size:8px">// Server</div>
+      <div id="server-input-row">
+        <input id="server-url-input" type="text" value="http://localhost:8000" placeholder="http://localhost:8000"/>
+        <button id="connect-btn" onclick="connect()">CONNECT</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- STATUSBAR -->
+  <footer id="statusbar">
+    <span id="statusbar-msg">BATON NEURAL OBSERVATORY — INITIALIZING</span>
+    <div class="statusbar-chip active-mode" id="mode-chip">DEBUG</div>
+    <div class="statusbar-chip" id="conn-chip">OFFLINE</div>
+    <div class="statusbar-chip" id="time-chip">--:--:--</div>
+  </footer>
+</div>
+
+<!-- CMD+K Palette -->
+<div id="cmd-overlay" onclick="closeCmdIfOutside(event)">
+  <div id="cmd-palette">
+    <div id="cmd-input-row">
+      <span id="cmd-prefix">&gt;</span>
+      <input id="cmd-input" type="text" placeholder="Set intent mode or send command..." autocomplete="off"/>
+    </div>
+    <div id="cmd-results">
+      <div class="cmd-item focused" onclick="setModeFromCmd('DEBUG')">
+        <span class="cmd-icon">◉</span>
+        <span class="cmd-text">Switch to DEBUG mode</span>
+        <span class="cmd-shortcut">MODE</span>
+      </div>
+      <div class="cmd-item" onclick="setModeFromCmd('RESEARCH')">
+        <span class="cmd-icon">◎</span>
+        <span class="cmd-text">Switch to RESEARCH mode</span>
+        <span class="cmd-shortcut">MODE</span>
+      </div>
+      <div class="cmd-item" onclick="setModeFromCmd('BUILD')">
+        <span class="cmd-icon">◈</span>
+        <span class="cmd-text">Switch to BUILD mode</span>
+        <span class="cmd-shortcut">MODE</span>
+      </div>
+      <div class="cmd-item" onclick="setModeFromCmd('DEEP_WORK')">
+        <span class="cmd-icon">◆</span>
+        <span class="cmd-text">Switch to DEEP WORK mode</span>
+        <span class="cmd-shortcut">MODE</span>
+      </div>
+      <div class="cmd-item" onclick="fetchStatus(); closeCmdPalette()">
+        <span class="cmd-icon">↻</span>
+        <span class="cmd-text">Refresh system status</span>
+        <span class="cmd-shortcut">API</span>
+      </div>
+      <div class="cmd-item" onclick="fetchSession(); closeCmdPalette()">
+        <span class="cmd-icon">⊡</span>
+        <span class="cmd-text">Reload session state</span>
+        <span class="cmd-shortcut">API</span>
+      </div>
+      <div class="cmd-item" onclick="clearLog(); closeCmdPalette()">
+        <span class="cmd-icon">⊘</span>
+        <span class="cmd-text">Clear event log</span>
+        <span class="cmd-shortcut">UI</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let ws = null;
+let wsReconnectTimer = null;
+let currentMode = 'DEBUG';
+let eventCount = 0;
+let serverBase = 'http://localhost:8000';
+let wsBase = 'ws://localhost:8000';
+
+// ── BOOT SEQUENCE ──
+const bootLines = [
+  { text: '> initializing neural observatory...', cls: '', delay: 200 },
+  { text: '> loading topology renderer...', cls: '', delay: 400 },
+  { text: '> establishing event bus...', cls: '', delay: 600 },
+  { text: '> mounting retrieval substrate...', cls: '', delay: 800 },
+  { text: '> connecting to baton server...', cls: '', delay: 1000 },
+  { text: '> OPERATIONAL', cls: 'ok', delay: 1400 },
+];
+
+function runBoot() {
+  const log = document.getElementById('boot-log');
+  const bar = document.getElementById('boot-progress');
+  bootLines.forEach((l, i) => {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = `boot-line ${l.cls}`;
+      el.textContent = l.text;
+      el.style.animationDelay = '0s';
+      log.appendChild(el);
+      bar.style.width = ((i + 1) / bootLines.length * 100) + '%';
+    }, l.delay);
+  });
+  setTimeout(() => {
+    document.getElementById('boot-overlay').classList.add('done');
+    setTimeout(() => { document.getElementById('boot-overlay').remove(); }, 700);
+    connect();
+  }, 1800);
+}
+
+// ── TIME ──
+function tick() {
+  const now = new Date();
+  document.getElementById('time-chip').textContent =
+    now.toTimeString().slice(0, 8);
+}
+setInterval(tick, 1000);
+tick();
+
+// ── SERVER URL ──
+function parseServerUrl(raw) {
+  const url = raw.replace(/\/$/, '');
+  serverBase = url;
+  wsBase = url.replace(/^http/, 'ws');
+  document.getElementById('server-url-display').textContent =
+    url.replace('http://', '').replace('https://', '');
+}
+
+// ── WEBSOCKET ──
+function connect() {
+  const inputUrl = document.getElementById('server-url-input').value.trim();
+  parseServerUrl(inputUrl || 'http://localhost:8000');
+
+  if (ws) { ws.close(); ws = null; }
+  clearTimeout(wsReconnectTimer);
+
+  setWsStatus('connecting');
+  addEvent('info', `Connecting to ${serverBase}...`);
+
+  // First verify HTTP
+  fetchStatus();
+  fetchSession();
+
+  // Try WebSocket
+  try {
+    ws = new WebSocket(`${wsBase}/ws`);
+
+    ws.onopen = () => {
+      setWsStatus('connected');
+      addEvent('ok', 'WebSocket connected');
+      document.getElementById('intent-submit').disabled = false;
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        handleWsMessage(data);
+      } catch {
+        addEvent('info', e.data);
+      }
+    };
+
+    ws.onclose = () => {
+      setWsStatus('offline');
+      addEvent('warn', 'WebSocket disconnected — retrying in 5s');
+      document.getElementById('intent-submit').disabled = true;
+      wsReconnectTimer = setTimeout(connect, 5000);
+    };
+
+    ws.onerror = () => {
+      setWsStatus('error');
+      addEvent('error', 'WebSocket error — falling back to HTTP polling');
+      // Fall back: poll REST
+      startPolling();
+    };
+  } catch(e) {
+    setWsStatus('error');
+    addEvent('error', 'Cannot open WebSocket');
+    startPolling();
+  }
+}
+
+function setWsStatus(state) {
+  const dot = document.getElementById('ws-dot');
+  const label = document.getElementById('ws-label');
+  const chip = document.getElementById('conn-chip');
+  dot.className = state;
+  const labels = { connected:'LIVE', connecting:'CONNECTING', offline:'OFFLINE', error:'ERROR' };
+  label.textContent = labels[state] || state.toUpperCase();
+  chip.textContent = labels[state] || state.toUpperCase();
+  chip.style.color = state === 'connected' ? 'var(--ok)' : state === 'connecting' ? 'var(--warn)' : 'var(--text-dim)';
+}
+
+// ── WS MESSAGE HANDLER ──
+function handleWsMessage(data) {
+  const type = data.type || data.event_type || 'info';
+  const msg = data.message || data.content || data.payload || JSON.stringify(data);
+
+  let cls = 'info';
+  if (type.includes('error') || type.includes('fail')) cls = 'error';
+  else if (type.includes('warn')) cls = 'warn';
+  else if (type.includes('ok') || type.includes('complete') || type.includes('success')) cls = 'ok';
+
+  addEvent(cls, `[${type}] ${msg}`);
+
+  // Update session if telemetry
+  if (data.context_budget) updateBudget(data.context_budget);
+  if (data.session) updateSessionDisplay(data.session);
+  if (data.workflows) updateWorkflows(data.workflows);
+
+  if (data.type === 'metric:update' && data.data?.payload) {
+    const p = data.data.payload;
+    updateBudget({
+      prompt_overhead: (p.promptOverhead || 0) / 100,
+      memory_injection: (p.memoryInjection || 0) / 100,
+      semantic_redundancy: (p.semanticRedundancy || 0) / 100
+    });
+  }
+}
+
+// ── HTTP POLLING FALLBACK ──
+let pollingInterval = null;
+function startPolling() {
+  if (pollingInterval) return;
+  pollingInterval = setInterval(() => {
+    fetchStatus();
+    fetchSession();
+  }, 4000);
+}
+
+// ── API CALLS ──
+async function fetchStatus() {
+  try {
+    const r = await fetch(`${serverBase}/api/status`);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    document.getElementById('api-status').textContent = data.status || 'ok';
+    document.getElementById('api-status').className = 'stat-val ok';
+    document.getElementById('sys-name').textContent = data.system || '—';
+    document.getElementById('statusbar-msg').textContent =
+      `${data.system || 'BATON'} — ${(data.status || 'operational').toUpperCase()}`;
+    addEvent('ok', `API: ${data.system} [${data.status}]`);
+    if (setWsStatus && ws === null) setWsStatus('offline');
+  } catch(e) {
+    document.getElementById('api-status').textContent = 'unreachable';
+    document.getElementById('api-status').className = 'stat-val warn';
+    addEvent('error', `API unreachable: ${e.message}`);
+  }
+}
+
+async function fetchSession() {
+  try {
+    const r = await fetch(`${serverBase}/api/session`);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    updateSessionDisplay(data);
+  } catch(e) {
+    // silent
+  }
+}
+
+function updateSessionDisplay(data) {
+  const inv = document.getElementById('active-inv');
+  const arch = document.getElementById('arch-focus');
+  const mode = document.getElementById('session-mode');
+  const lastIntent = document.getElementById('last-intent');
+
+  inv.textContent = data.active_investigation || 'null';
+  inv.className = data.active_investigation ? 'session-val' : 'session-val empty';
+
+  arch.textContent = data.current_architecture_focus || 'null';
+  arch.className = data.current_architecture_focus ? 'session-val' : 'session-val empty';
+
+  if (data.last_active_intent) {
+    lastIntent.textContent = data.last_active_intent;
+    // Sync mode button
+    const btn = document.querySelector(`[data-mode="${data.last_active_intent}"]`);
+    if (btn) { setMode(btn); }
+  }
+
+  mode.textContent = data.last_active_intent || currentMode;
+  updateWorkflows(data.unresolved_workflows || []);
+}
+
+function updateWorkflows(workflows) {
+  const container = document.getElementById('workflow-section');
+  const empty = document.getElementById('workflow-empty');
+  if (!workflows || workflows.length === 0) {
+    container.querySelectorAll('.workflow-item').forEach(e => e.remove());
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.querySelectorAll('.workflow-item').forEach(e => e.remove());
+  workflows.forEach(w => {
+    const el = document.createElement('div');
+    el.className = 'workflow-item';
+    el.textContent = typeof w === 'string' ? w : JSON.stringify(w);
+    container.appendChild(el);
+  });
+}
+
+function updateBudget(budget) {
+  const set = (id, fillId, val) => {
+    const pct = Math.min(100, Math.round(val * 100));
+    document.getElementById(id).textContent = pct + '%';
+    document.getElementById(fillId).style.width = pct + '%';
+  };
+  if (budget.prompt_overhead !== undefined) set('g-prompt', 'gf-prompt', budget.prompt_overhead);
+  if (budget.memory_injection !== undefined) set('g-memory', 'gf-memory', budget.memory_injection);
+  if (budget.semantic_redundancy !== undefined) set('g-sem', 'gf-sem', budget.semantic_redundancy);
+}
+
+// ── INTENT SUBMISSION ──
+async function submitIntent() {
+  const input = document.getElementById('intent-input');
+  const val = input.value.trim();
+  if (!val) return;
+  input.value = '';
+
+  addEvent('info', `→ ${val}`);
+
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'intent', content: val, mode: currentMode }));
+  } else {
+    try {
+      const r = await fetch(`${serverBase}/api/intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent: val, mode: currentMode })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        addEvent('ok', `ACK: ${JSON.stringify(data)}`);
+      } else {
+        addEvent('warn', `Intent endpoint: ${r.status}`);
+      }
+    } catch(e) {
+      addEvent('error', `Intent send failed: ${e.message}`);
+    }
+  }
+}
+
+// ── MODE SWITCHING ──
+function setMode(btn) {
+  document.querySelectorAll('.intent-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+  document.getElementById('mode-chip').textContent = currentMode.replace('_', ' ');
+  document.getElementById('session-mode').textContent = currentMode;
+  addEvent('info', `Mode → ${currentMode}`);
+}
+
+function setModeFromCmd(mode) {
+  const btn = document.querySelector(`[data-mode="${mode}"]`);
+  if (btn) setMode(btn);
+  closeCmdPalette();
+}
+
+// ── EVENT LOG ──
+function addEvent(cls, msg) {
+  const log = document.getElementById('event-log');
+  const entry = document.createElement('div');
+  entry.className = `event-entry ${cls}`;
+  const now = new Date();
+  const time = now.toTimeString().slice(0, 8);
+  entry.innerHTML = `<span class="event-time">${time}</span><span class="event-msg">${msg}</span>`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  eventCount++;
+  document.getElementById('event-count').textContent = eventCount;
+  // Keep max 200 entries
+  while (log.children.length > 200) log.removeChild(log.firstChild);
+}
+
+function clearLog() {
+  document.getElementById('event-log').innerHTML = '';
+  eventCount = 0;
+  document.getElementById('event-count').textContent = '0';
+}
+
+// ── CMD PALETTE ──
+function openCmdPalette() {
+  document.getElementById('cmd-overlay').classList.add('open');
+  document.getElementById('cmd-input').focus();
+  document.getElementById('intent-input').value = ''; // sync from intent field
+}
+
+function closeCmdPalette() {
+  document.getElementById('cmd-overlay').classList.remove('open');
+}
+
+function closeCmdIfOutside(e) {
+  if (e.target === document.getElementById('cmd-overlay')) closeCmdPalette();
+}
+
+// ── KEYBOARD ──
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    const overlay = document.getElementById('cmd-overlay');
+    if (overlay.classList.contains('open')) closeCmdPalette();
+    else openCmdPalette();
+  }
+  if (e.key === 'Escape') closeCmdPalette();
+  if (e.key === 'Enter' && document.activeElement === document.getElementById('intent-input')) {
+    submitIntent();
+  }
+  if (e.key === 'Enter' && document.activeElement === document.getElementById('server-url-input')) {
+    connect();
+  }
+});
+
+// ── TOPOLOGY NODE PULSE (active edges) ──
+// Randomly highlight edges to show "activity"
+const edges = document.querySelectorAll('.topo-edge');
+function pulseTopology() {
+  edges.forEach(e => {
+    if (Math.random() > 0.7) {
+      e.style.stroke = '#1e3a5f';
+      setTimeout(() => { e.style.stroke = ''; }, 800);
+    }
+  });
+}
+setInterval(pulseTopology, 2500);
+
+// ── INIT ──
+runBoot();
+</script>
+</body>
+</html>

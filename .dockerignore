@@ -1,0 +1,14 @@
+.venv
+venv
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git
+.gitignore
+.env
+projskep_ui
+projskep_memory
+*.ps1
+xterm*.svg
+*.md

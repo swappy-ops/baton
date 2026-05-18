@@ -1,7 +1,7 @@
 # PROJECT_STATE.md - Current Operational Status
 
 ## System Summary
-ProjSkep is now **FULLY OPERATIONAL** as a production-grade cognition workstation. All core infrastructure is stable, hardened, and validated.
+Baton is now **FULLY OPERATIONAL** as a production-grade cognition workstation. All core infrastructure is stable, hardened, and validated.
 
 ## Active Subsystems
 - **Orchestration**: LangGraph (Production-Ready)

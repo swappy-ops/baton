@@ -19,3 +19,17 @@ xterm*.svg
 
 # OS
 .DS_Store
+
+# Baton runtime
+baton_memory/
+*.sqlite3
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+baton_ui/node_modules/
+baton_ui/dist/
+*.ps1
+completed_tasks/
+incoming_tasks/

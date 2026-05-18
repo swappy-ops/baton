@@ -5,7 +5,7 @@ model = SentenceTransformer(
 )
 
 emb = model.encode(
-    "ProjSkep remembers context"
+    "Baton remembers context"
 )
 
 print(len(emb))

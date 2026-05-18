@@ -1,0 +1,18 @@
+services:
+  baton:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - baton_data:/app/baton_server/db
+      - baton_embeddings:/app/baton_memory
+    env_file:
+      - .env
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+    restart: unless-stopped
+
+volumes:
+  baton_data:
+  baton_embeddings:
