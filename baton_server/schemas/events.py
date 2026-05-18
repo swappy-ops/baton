@@ -5,6 +5,7 @@ import uuid
 
 Severity = Literal["info", "warning", "critical"]
 
+
 class SystemEvent(BaseModel):
     id: str = str(uuid.uuid4())
     type: str
@@ -13,17 +14,20 @@ class SystemEvent(BaseModel):
     severity: Severity = "info"
     payload: Any
 
+
 class TracePayload(BaseModel):
-    category: Literal['EXECUTION', 'RETRIEVAL', 'AUDITS', 'DRIFT', 'FAILURES']
+    category: Literal["EXECUTION", "RETRIEVAL", "AUDITS", "DRIFT", "FAILURES"]
     message: str
     traceId: str
+
 
 class WorkflowPayload(BaseModel):
     workflowId: str
     name: str
-    status: Literal['IDLE', 'RUNNING', 'COMPLETED', 'FAILED']
+    status: Literal["IDLE", "RUNNING", "COMPLETED", "FAILED"]
     progress: float
     step: Optional[str] = None
+
 
 class MetricPayload(BaseModel):
     promptOverhead: float

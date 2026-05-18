@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
+
 @router.get("/status")
 async def get_status():
     from baton_server.main import START_TIME
@@ -25,7 +26,7 @@ async def get_status():
         "database": "connected" if db_exists else "missing",
         "websocket_connections": ws_connections,
         "session_mode": session.get("last_active_intent", "DEBUG"),
-        "uptime_seconds": round(time.time() - START_TIME, 1)
+        "uptime_seconds": round(time.time() - START_TIME, 1),
     }
 
 
@@ -35,7 +36,11 @@ async def get_metrics():
     db_size = os.path.getsize(db_path) if os.path.exists(db_path) else 0
 
     session_dir = "baton_server/db/sessions"
-    session_count = len([f for f in os.listdir(session_dir) if f.endswith(".json")]) if os.path.exists(session_dir) else 0
+    session_count = (
+        len([f for f in os.listdir(session_dir) if f.endswith(".json")])
+        if os.path.exists(session_dir)
+        else 0
+    )
 
     memory_path = "baton_memory"
     memory_size = 0
@@ -56,10 +61,11 @@ async def get_metrics():
             pass
 
     import sys
+
     return {
         "database_size_bytes": db_size,
         "session_count": session_count,
         "memory_size_bytes": memory_size,
         "trace_count": trace_count,
-        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     }

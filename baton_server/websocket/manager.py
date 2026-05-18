@@ -3,6 +3,7 @@ import asyncio
 from typing import List
 from fastapi import WebSocket
 
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -24,10 +25,7 @@ class ConnectionManager:
             await connection.send_text(message)
 
     async def broadcast_event(self, event_type: str, data: dict):
-        payload = json.dumps({
-            "type": event_type,
-            "data": data
-        })
+        payload = json.dumps({"type": event_type, "data": data})
         await self.broadcast(payload)
 
     async def keepalive(self, websocket: WebSocket):
@@ -43,6 +41,7 @@ class ConnectionManager:
             pass
         except Exception:
             pass
+
 
 # Global manager instance for services to use
 manager = ConnectionManager()

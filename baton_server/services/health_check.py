@@ -3,9 +3,10 @@ import httpx
 import sys
 import os
 
+
 async def check_health():
     print("Checking Baton Health...")
-    
+
     # Check Backend
     try:
         async with httpx.AsyncClient() as client:
@@ -26,6 +27,7 @@ async def check_health():
 
     # Check WebSocket (Basic port check)
     import socket
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         s.connect(("localhost", 8000))
@@ -34,6 +36,7 @@ async def check_health():
         print("❌ WebSocket Port: CLOSED")
     finally:
         s.close()
+
 
 if __name__ == "__main__":
     asyncio.run(check_health())
